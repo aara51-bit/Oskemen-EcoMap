@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oskemen EcoMap — Ауа сапасының мониторингі</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>🌍 Oskemen EcoMap — Өскемен ауа сапасының картасы</h1>
+    <div class="badge">⚠️ НМУ: Желсіз ауа райы (2-дәреже)</div>
+</header>
+
+<div class="container">
+    <aside class="sidebar">
+        <div class="hint">
+            💡 <b>2ГИС режимі:</b> Картаны тінтуірмен басып тұрып жылжытыңыз, дөңгелегімен жақындатыңыз немесе бос жерін басып жаңа шағым қосыңыз!
+        </div>
+
+        <!-- Фильтр батырмалары -->
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterStations('all', this)">Барлығы</button>
+            <button class="filter-btn" onclick="filterStations('red', this)">🔴 Ластанған</button>
+            <button class="filter-btn" onclick="filterStations('orange', this)">🟡 Орташа</button>
+            <button class="filter-btn" onclick="filterStations('green', this)">🟢 Таза</button>
+        </div>
+
+        <!-- Аудандар тізімі -->
+        <div id="station-list"></div>
+
+        <!-- Таза SVG апталық график -->
+        <div class="chart-box">
+            <h4>📊 Соңғы 7 күндегі орташа AQI индексі</h4>
+            <div id="custom-chart"></div>
+        </div>
+    </aside>
+
+    <!-- Интерактивті 2ГИС стиліндегі Өскемен картасы -->
+    <main class="map-wrapper" id="map-container">
+        <div id="map-info-box" class="map-popup" style="display: none;"></div>
+        
+        <!-- 2ГИС стиліндегі басқару батырмалары -->
+        <div class="zoom-controls">
+            <button onclick="zoomMap(0.2)" title="Жақындату">+</button>
+            <button onclick="zoomMap(-0.2)" title="Алыстату">−</button>
+            <button onclick="resetMap()" title="Ортаға қайтару">⟲</button>
+        </div>
+
+        <svg id="oskemen-svg" viewBox="0 0 1600 1200" preserveAspectRatio="xMidYMid slice">
+            <g id="viewport">
+                <!-- Карта фоны және қалалық квартал торлары -->
+                <rect width="1600" height="1200" fill="#eef2f6" />
+                <g stroke="#dce3ec" stroke-width="2">
+                    <line x1="0" y1="200" x2="1600" y2="200" />
+                    <line x1="0" y1="400" x2="1600" y2="400" />
+                    <line x1="0" y1="600" x2="1600" y2="600" />
+                    <line x1="0" y1="800" x2="1600" y2="800" />
+                    <line x1="0" y1="1000" x2="1600" y2="1000" />
+                    <line x1="300" y1="0" x2="300" y2="1200" />
+                    <line x1="600" y1="0" x2="600" y2="1200" />
+                    <line x1="900" y1="0" x2="900" y2="1200" />
+                    <line x1="1200" y1="0" x2="1200" y2="1200" />
+                </g>
+
+                <!-- Жасыл саябақтар мен орман аймақтары -->
+                <ellipse cx="380" cy="850" rx="180" ry="110" fill="#bbf7d0" opacity="0.75" />
+                <ellipse cx="860" cy="700" rx="85" ry="55" fill="#bbf7d0" opacity="0.85" />
+                <ellipse cx="1320" cy="920" rx="160" ry="90" fill="#bbf7d0" opacity="0.7" />
+                <text x="860" y="705" text-anchor="middle" fill="#15803d" font-size="15" font-weight="bold">Жастар саябағы</text>
+
+                <!-- Өндірістік аймақ сұлбасы -->
+                <rect x="650" y="120" width="380" height="210" rx="25" fill="#fecaca" opacity="0.55" stroke="#f87171" stroke-width="3" stroke-dasharray="10,6" />
+                <text x="840" y="155" text-anchor="middle" fill="#b91c1c" font-size="16" font-weight="bold">ӨНЕРКӘСІПТІК АЙМАҚ (ҮМЗ / КАЗЦИНК)</text>
+
+                <!-- Ертіс өзені -->
+                <path d="M 220 0 Q 480 350 680 620 T 1050 1200" fill="none" stroke="#38bdf8" stroke-width="46" stroke-linecap="round" />
+                <text x="430" y="320" fill="#0369a1" font-size="22" font-weight="bold" transform="rotate(52 430,320)">Ертіс өзені</text>
+
+                <!-- Үлбі өзені -->
+                <path d="M 1600 340 Q 1150 480 680 620" fill="none" stroke="#38bdf8" stroke-width="32" stroke-linecap="round" />
+                <text x="1150" y="455" fill="#0369a1" font-size="20" font-weight="bold" transform="rotate(-16 1150,455)">Үлбі өзені</text>
+
+                <!-- Негізгі даңғылдар мен көпірлер -->
+                <line x1="480" y1="680" x2="840" y2="550" stroke="#94a3b8" stroke-width="12" />
+                <text x="640" y="600" fill="#475569" font-size="14" font-weight="bold" transform="rotate(-20 640,600)">Ертіс көпірі</text>
+
+                <line x1="940" y1="430" x2="990" y2="620" stroke="#94a3b8" stroke-width="12" />
+                <text x="980" y="520" fill="#475569" font-size="14" font-weight="bold">Үлбі көпірі</text>
+
+                <!-- Даңғылдар (Сәтбаев, Назарбаев, Есенберлин) -->
+                <line x1="250" y1="950" x2="660" y2="630" stroke="#cbd5e1" stroke-width="10" />
+                <text x="410" y="810" fill="#64748b" font-size="15" font-weight="bold" transform="rotate(-38 410,810)">Қ. Сәтбаев даңғылы</text>
+
+                <line x1="840" y1="550" x2="1350" y2="680" stroke="#cbd5e1" stroke-width="10" />
+                <text x="1080" y="600" fill="#64748b" font-size="15" font-weight="bold" transform="rotate(14 1080,600)">Н. Назарбаев даңғылы</text>
+
+                <line x1="760" y1="240" x2="920" y2="630" stroke="#cbd5e1" stroke-width="8" stroke-dasharray="10,6" />
+
+                <!-- Аудан атаулары -->
+                <text x="1220" y="210" fill="#475569" font-size="24" font-weight="bold">СОГРА</text>
+                <text x="310" y="420" fill="#475569" font-size="24" font-weight="bold">ЗАЩИТА</text>
+                <text x="930" y="690" fill="#475569" font-size="24" font-weight="bold">ОРТАЛЫҚ (Стрелка)</text>
+                <text x="540" y="960" fill="#475569" font-size="24" font-weight="bold">КШТ (Жібек маталар)</text>
+                <text x="230" y="860" fill="#475569" font-size="24" font-weight="bold">МЕНОВНОЕ</text>
+                <text x="1280" y="960" fill="#475569" font-size="24" font-weight="bold">АБЛАКЕТКА</text>
+                <text x="1350" y="480" fill="#475569" font-size="22" font-weight="bold">ОКТЯБРЬСКИЙ</text>
+
+                <!-- Динамикалық маркерлер мен шағымдар қабаты -->
+                <g id="stations-layer"></g>
+                <g id="reports-layer"></g>
+            </g>
+        </svg>
+
+        <!-- Карта легендасы -->
+        <div class="map-legend">
+            <div><span class="dot red"></span> Қауіпті (AQI > 100)</div>
+            <div><span class="dot orange"></span> Орташа (AQI 50-100)</div>
+            <div><span class="dot green"></span> Таза (AQI < 50)</div>
+            <div>📍 Тұрғын шағымы</div>
+        </div>
+    </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
